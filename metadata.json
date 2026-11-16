@@ -1,0 +1,6 @@
+{
+  "name": "Pixel Arrow",
+  "description": "Pixel-art neon arrow labyrinth puzzle game with Unity Ads monetization, Fall Mode, custom skins, promo codes, and encrypted admin configuration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

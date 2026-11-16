@@ -1,0 +1,104 @@
+{
+  "entities": {
+    "PlayerProfile": {
+      "title": "PlayerProfile",
+      "description": "Login-free anonymous player profile keyed by immutable UUID v4, containing progression, economy, lives, promo history, settings, and ad/session statistics.",
+      "type": "object",
+      "properties": {
+        "schemaVersion": { "type": "integer", "description": "Schema version for client migrations (>= 1)" },
+        "userId": { "type": "string", "description": "Immutable anonymous UUID v4 player identifier" },
+        "createdAt": { "type": "integer", "description": "First-launch creation epoch milliseconds" },
+        "lastActiveAt": { "type": "integer", "description": "Most recent active timestamp in epoch milliseconds" },
+        "displayName": { "type": "string", "description": "Player display label" },
+        "classicLevel": { "type": "integer", "description": "Current active Classic mode level (>= 1)" },
+        "classicHighestCleared": { "type": "integer", "description": "Highest Classic level completed" },
+        "fallStage": { "type": "integer", "description": "Current Fall Mode stage (>= 1)" },
+        "fallHighScore": { "type": "integer", "description": "Best score in Fall Mode" },
+        "selectedSkinId": { "type": "string", "description": "Active arrow skin identifier" },
+        "unlockedSkins": { "type": "array", "description": "List of unlocked skin IDs" },
+        "lives": { "type": "integer", "description": "Current lives count (0..5)" },
+        "lastLivesRefillEpochMs": { "type": "integer", "description": "Last lives refill anchor epoch milliseconds" },
+        "hintsRemaining": { "type": "integer", "description": "Available hint charges" },
+        "sfxEnabled": { "type": "boolean", "description": "Sound effects enabled toggle" },
+        "bgmEnabled": { "type": "boolean", "description": "Background music enabled toggle" },
+        "vibrationEnabled": { "type": "boolean", "description": "Haptic vibration enabled toggle" },
+        "darkMode": { "type": "boolean", "description": "Dark mode enabled toggle" },
+        "totalArrowsCleared": { "type": "integer", "description": "Lifetime arrows escaped" },
+        "coins": { "type": "integer", "description": "Coin balance earned from levels and promo codes" },
+        "redeemedPromos": { "type": "array", "description": "Single-use redeemed promo code IDs" },
+        "totalSessions": { "type": "integer", "description": "Total launched sessions" },
+        "totalPlayTimeSeconds": { "type": "integer", "description": "Total foreground play time in seconds" },
+        "rewardedAdsWatched": { "type": "integer", "description": "Total completed rewarded ads" },
+        "interstitialAdsWatched": { "type": "integer", "description": "Total completed interstitial ads" },
+        "lastRewardedAdAtMs": { "type": "integer", "description": "Epoch ms of last watched rewarded ad" },
+        "lastInterstitialAdAtMs": { "type": "integer", "description": "Epoch ms of last watched interstitial ad" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server sync timestamp" }
+      },
+      "required": [
+        "schemaVersion",
+        "userId",
+        "createdAt",
+        "lastActiveAt",
+        "displayName",
+        "classicLevel",
+        "classicHighestCleared",
+        "fallStage",
+        "fallHighScore",
+        "selectedSkinId",
+        "unlockedSkins",
+        "lives",
+        "lastLivesRefillEpochMs",
+        "hintsRemaining",
+        "sfxEnabled",
+        "bgmEnabled",
+        "vibrationEnabled",
+        "darkMode",
+        "totalArrowsCleared",
+        "coins",
+        "redeemedPromos",
+        "totalSessions",
+        "totalPlayTimeSeconds",
+        "rewardedAdsWatched",
+        "interstitialAdsWatched",
+        "lastRewardedAdAtMs",
+        "lastInterstitialAdAtMs",
+        "updatedAt"
+      ]
+    },
+    "LevelRecord": {
+      "title": "LevelRecord",
+      "description": "Completed level record for Classic or Fall Mode.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Anonymous UUID v4 of the player" },
+        "mode": { "type": "string", "enum": ["classic", "fall"], "description": "Game mode" },
+        "levelNumber": { "type": "integer", "description": "Level or stage number" },
+        "stars": { "type": "integer", "description": "Stars earned (1..3)" },
+        "mistakes": { "type": "integer", "description": "Hearts lost during run" },
+        "durationSeconds": { "type": "integer", "description": "Completion duration in seconds" },
+        "arrowsCleared": { "type": "integer", "description": "Arrows cleared in run" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server creation timestamp" }
+      },
+      "required": [
+        "userId",
+        "mode",
+        "levelNumber",
+        "stars",
+        "mistakes",
+        "durationSeconds",
+        "arrowsCleared",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/PlayerProfile" },
+      "description": "Anonymous player profile, progression, promo codes, settings, and ad/session stats."
+    },
+    "/users/{userId}/level_history/{entryId}": {
+      "schema": { "$ref": "#/entities/LevelRecord" },
+      "description": "Per-user history of cleared Classic and Fall Mode levels."
+    }
+  }
+}

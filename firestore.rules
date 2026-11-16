@@ -1,0 +1,141 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidUuidV4(id) {
+      return id is string &&
+             id.size() == 36 &&
+             id.matches('^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$');
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidPlayerProfile(data) {
+      return data.schemaVersion is int && data.schemaVersion >= 1 && data.schemaVersion <= 100 &&
+             isValidUuidV4(data.userId) &&
+             data.createdAt is int && data.createdAt >= 0 &&
+             data.lastActiveAt is int && data.lastActiveAt >= data.createdAt &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80 &&
+             data.classicLevel is int && data.classicLevel >= 1 && data.classicLevel <= 9999 &&
+             data.classicHighestCleared is int && data.classicHighestCleared >= 0 && data.classicHighestCleared <= 9999 &&
+             data.fallStage is int && data.fallStage >= 1 && data.fallStage <= 9999 &&
+             data.fallHighScore is int && data.fallHighScore >= 0 && data.fallHighScore <= 100000000 &&
+             data.selectedSkinId is string && data.selectedSkinId.size() >= 1 && data.selectedSkinId.size() <= 40 &&
+             data.unlockedSkins is list && data.unlockedSkins.size() >= 1 && data.unlockedSkins.size() <= 20 &&
+             data.unlockedSkins[0] is string &&
+             data.lives is int && data.lives >= 0 && data.lives <= 5 &&
+             data.lastLivesRefillEpochMs is int && data.lastLivesRefillEpochMs >= 0 &&
+             data.hintsRemaining is int && data.hintsRemaining >= 0 && data.hintsRemaining <= 999 &&
+             data.sfxEnabled is bool &&
+             data.bgmEnabled is bool &&
+             data.vibrationEnabled is bool &&
+             data.darkMode is bool &&
+             data.totalArrowsCleared is int && data.totalArrowsCleared >= 0 && data.totalArrowsCleared <= 100000000 &&
+             data.coins is int && data.coins >= 0 && data.coins <= 100000000 &&
+             data.redeemedPromos is list && data.redeemedPromos.size() <= 50 &&
+             (data.redeemedPromos.size() == 0 || data.redeemedPromos[0] is string) &&
+             data.totalSessions is int && data.totalSessions >= 0 && data.totalSessions <= 100000000 &&
+             data.totalPlayTimeSeconds is int && data.totalPlayTimeSeconds >= 0 && data.totalPlayTimeSeconds <= 100000000 &&
+             data.rewardedAdsWatched is int && data.rewardedAdsWatched >= 0 && data.rewardedAdsWatched <= 100000000 &&
+             data.interstitialAdsWatched is int && data.interstitialAdsWatched >= 0 && data.interstitialAdsWatched <= 100000000 &&
+             data.lastRewardedAdAtMs is int && data.lastRewardedAdAtMs >= 0 &&
+             data.lastInterstitialAdAtMs is int && data.lastInterstitialAdAtMs >= 0;
+    }
+
+    function isValidLevelRecord(data) {
+      return isValidUuidV4(data.userId) &&
+             data.mode is string && data.mode in ['classic', 'fall'] &&
+             data.levelNumber is int && data.levelNumber >= 1 && data.levelNumber <= 9999 &&
+             data.stars is int && data.stars >= 1 && data.stars <= 3 &&
+             data.mistakes is int && data.mistakes >= 0 && data.mistakes <= 10 &&
+             data.durationSeconds is int && data.durationSeconds >= 0 && data.durationSeconds <= 86400 &&
+             data.arrowsCleared is int && data.arrowsCleared >= 1 && data.arrowsCleared <= 5000;
+    }
+
+    match /users/{userId} {
+      // Disallow collection listing so anonymous user profiles cannot be enumerated
+      allow list: if false;
+      allow get: if isValidUuidV4(userId);
+
+      allow create: if isValidUuidV4(userId) &&
+                       incoming().userId == userId &&
+                       incoming().keys().hasAll([
+                         'schemaVersion', 'userId', 'createdAt', 'lastActiveAt', 'displayName',
+                         'classicLevel', 'classicHighestCleared', 'fallStage', 'fallHighScore',
+                         'selectedSkinId', 'unlockedSkins', 'lives', 'lastLivesRefillEpochMs',
+                         'hintsRemaining', 'sfxEnabled', 'bgmEnabled', 'vibrationEnabled', 'darkMode',
+                         'totalArrowsCleared', 'coins', 'redeemedPromos',
+                         'totalSessions', 'totalPlayTimeSeconds',
+                         'rewardedAdsWatched', 'interstitialAdsWatched',
+                         'lastRewardedAdAtMs', 'lastInterstitialAdAtMs', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'schemaVersion', 'userId', 'createdAt', 'lastActiveAt', 'displayName',
+                         'classicLevel', 'classicHighestCleared', 'fallStage', 'fallHighScore',
+                         'selectedSkinId', 'unlockedSkins', 'lives', 'lastLivesRefillEpochMs',
+                         'hintsRemaining', 'sfxEnabled', 'bgmEnabled', 'vibrationEnabled', 'darkMode',
+                         'totalArrowsCleared', 'coins', 'redeemedPromos',
+                         'totalSessions', 'totalPlayTimeSeconds',
+                         'rewardedAdsWatched', 'interstitialAdsWatched',
+                         'lastRewardedAdAtMs', 'lastInterstitialAdAtMs', 'updatedAt'
+                       ]) &&
+                       incoming().updatedAt is timestamp &&
+                       incoming().updatedAt <= request.time &&
+                       isValidPlayerProfile(incoming());
+
+      allow update: if isValidUuidV4(userId) &&
+                       isValidPlayerProfile(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().schemaVersion >= existing().schemaVersion &&
+                       incoming().updatedAt is timestamp &&
+                       incoming().updatedAt <= request.time &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'schemaVersion', 'lastActiveAt', 'displayName',
+                         'classicLevel', 'classicHighestCleared', 'fallStage', 'fallHighScore',
+                         'selectedSkinId', 'unlockedSkins', 'lives', 'lastLivesRefillEpochMs',
+                         'hintsRemaining', 'sfxEnabled', 'bgmEnabled', 'vibrationEnabled', 'darkMode',
+                         'totalArrowsCleared', 'coins', 'redeemedPromos',
+                         'totalSessions', 'totalPlayTimeSeconds',
+                         'rewardedAdsWatched', 'interstitialAdsWatched',
+                         'lastRewardedAdAtMs', 'lastInterstitialAdAtMs', 'updatedAt'
+                       ]);
+
+      allow delete: if false;
+
+      match /level_history/{entryId} {
+        allow get, list: if isValidUuidV4(userId);
+
+        allow create: if isValidUuidV4(userId) &&
+                         isValidId(entryId) &&
+                         incoming().userId == userId &&
+                         incoming().keys().hasAll([
+                           'userId', 'mode', 'levelNumber', 'stars',
+                           'mistakes', 'durationSeconds', 'arrowsCleared', 'createdAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'mode', 'levelNumber', 'stars',
+                           'mistakes', 'durationSeconds', 'arrowsCleared', 'createdAt'
+                         ]) &&
+                         incoming().createdAt is timestamp &&
+                         incoming().createdAt <= request.time &&
+                         isValidLevelRecord(incoming());
+
+        allow update, delete: if false;
+      }
+    }
+  }
+}
